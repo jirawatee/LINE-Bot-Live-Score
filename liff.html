@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Select your team</title>
+</head>
+
+<body>
+  <table width="100%">
+    <tr>
+      <td width="50%">
+        <img src="https://upload.wikimedia.org/wikipedia/en/thumb/0/0c/Liverpool_FC.svg/300px-Liverpool_FC.svg.png"
+          width="100%" onclick="sendMessage('liverpool')">
+      </td>
+      <td width="50%">
+        <img
+          src="https://tot-tmp.azureedge.net/media/2280/spurs-blue-no-text-300x300.png?anchor=center&mode=crop&width=300"
+          width="100%" onclick="sendMessage('tottenham')">
+      </td>
+    </tr>
+  </table>
+
+  <script src="https://d.line-scdn.net/liff/1.0/sdk.js"></script>
+  <script>
+    window.onload = function (e) {
+      liff.init(function (data) {
+        initializeApp(data);
+      });
+    };
+    function sendMessage(team) {
+      switch (team) {
+        case 'liverpool':
+          msg = {
+            type: 'image',
+            originalContentUrl: 'https://upload.wikimedia.org/wikipedia/en/thumb/0/0c/Liverpool_FC.svg/300px-Liverpool_FC.svg.png',
+            previewImageUrl: 'https://upload.wikimedia.org/wikipedia/en/thumb/0/0c/Liverpool_FC.svg/300px-Liverpool_FC.svg.png'
+          }
+          break;
+        case 'tottenham':
+          msg = {
+            type: 'image',
+            originalContentUrl: 'https://tot-tmp.azureedge.net/media/2280/spurs-blue-no-text-300x300.png?anchor=center&mode=crop&width=300',
+            previewImageUrl: 'https://tot-tmp.azureedge.net/media/2280/spurs-blue-no-text-300x300.png?anchor=center&mode=crop&width=300'
+          }
+          break;
+      }
+      liff.sendMessages([msg]).then(() => {
+        liff.closeWindow();
+      }).catch(function (error) {
+        alert("Error sending message: " + error);
+      });
+    }
+  </script>
+</body>
+
+</html>
