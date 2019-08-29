@@ -1,0 +1,19 @@
+{
+  "events": [
+    {
+      "type": "message",
+      "replyToken": "f532186f087141c6b9f8692b2213cabf",
+      "source": {
+        "userId": "U414f12199dcb2539bfe81bee07b7fe24",
+        "type": "user"
+      },
+      "timestamp": 1564212884383,
+      "message": {
+        "type": "text",
+        "id": "10285710214245",
+        "text": "Hello World!"
+      }
+    }
+  ],
+  "destination": "U8543d6cbe9c23e5231791a0e55768e6d"
+}

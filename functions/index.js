@@ -10,13 +10,22 @@ const request = require("request-promise");
 const vision = require('@google-cloud/vision');
 const client = new vision.ImageAnnotatorClient();
 
+const LINE_CHANNEL_SECRET = "YOUR-CHANNEL-SECRET";
 const LINE_MESSAGING_API = "https://api.line.me/v2/bot/message";
 const LINE_HEADER = {
   "Content-Type": "application/json",
   Authorization: "Bearer YOUR-CHANNEL-ACCESS-TOKEN"
 };
 
+const crypto = require('crypto');
+
 exports.UCL = functions.region(region).runWith(runtimeOpts).https.onRequest(async (req, res) => {
+  const text = JSON.stringify(req.body);
+  const signature = crypto.createHmac('SHA256', LINE_CHANNEL_SECRET).update(text).digest('base64').toString();
+  if (signature !== req.headers['x-line-signature']) {
+    return res.status(401).send('Unauthorized');
+  }
+
   let event = req.body.events[0]
   switch (event.type) {
     case 'message':
@@ -181,17 +190,19 @@ exports.liveScore = functions.region(region).runWith(runtimeOpts).firestore.docu
 });
 */
 
-exports.finalScore = functions.region(region).pubsub.schedule('28 of may 03:10').timeZone('Asia/Bangkok').onRun(async context => {
-  // Firebase Realtime Database
-  let result = await admin.database().ref('ucl/score').once('value');
-  broadcast(`จบการแข่งขัน\n${result.val()}`);
+exports.finalScore = functions.region(region).runWith(runtimeOpts)
+  .pubsub.schedule('28 of may 03:10')
+  .timeZone('Asia/Bangkok').onRun(async context => {
+    // Firebase Realtime Database
+    let result = await admin.database().ref('ucl/score').once('value');
+    broadcast(`จบการแข่งขัน\n${result.val()}`);
 
-  /*
-  // Cloud Firestore
-  let result = await admin.firestore().doc('ucl/final').get()
-  broadcast(`จบการแข่งขัน\n${result.data().score}`);
-  */
-});
+    /*
+    // Cloud Firestore
+    let result = await admin.firestore().doc('ucl/final').get()
+    broadcast(`จบการแข่งขัน\n${result.data().score}`);
+    */
+  });
 
 const push = (userId, msg, quickItems) => {
   return request.post({

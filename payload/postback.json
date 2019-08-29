@@ -1,0 +1,17 @@
+{
+  "events": [
+    {
+      "type": "postback",
+      "replyToken": "76329dca3daf499081914327a81d2d7e",
+      "source": {
+        "userId": "U3c28a70ed7c5e7ce2c9a75976328c426",
+        "type": "user"
+      },
+      "timestamp": 1564230745119,
+      "postback": {
+        "data": "team=firebase"
+      }
+    }
+  ],
+  "destination": "U8543d6cbe9c23e5231791a0e55768e6d"
+}
