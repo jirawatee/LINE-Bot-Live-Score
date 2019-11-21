@@ -88,7 +88,7 @@ exports.UCL = functions.region(region).runWith(runtimeOpts).https.onRequest(asyn
       break;
     case 'postback': {
       let msg = 'ทีมที่คุณเลือกมันเข้ารอบมาชิง UCL ซะทีไหนเล่า ปั๊ดโถ่!';
-      let team = event.postback.data.split('=')[1]
+      let team = event.postback.data.split('=')[1].toLowerCase()
       if (team.indexOf('liverpool') >= 0 || team.indexOf('tottenham') >= 0) {
         // Firebase Realtime Database
         await admin.database().ref('ucl/uid').child(event.source.userId).set(true)
@@ -109,6 +109,7 @@ const doImage = async (event) => {
   const path = require("path");
   const os = require("os");
   const fs = require("fs");
+  const UUID = require("uuid-v4");
 
   let url = `${LINE_MESSAGING_API}/${event.message.id}/content`;
   if (event.message.contentProvider.type === 'external') {
@@ -127,7 +128,12 @@ const doImage = async (event) => {
   const bucket = admin.storage().bucket('fir-devday.appspot.com');
   await bucket.upload(tempLocalFile, {
     destination: `${event.source.userId}.jpg`,
-    metadata: { cacheControl: 'no-cache' }
+    metadata: {
+      cacheControl: 'no-cache',
+      metadata: {
+        firebaseStorageDownloadTokens: UUID()
+      }
+    }
   });
 
   fs.unlinkSync(tempLocalFile)
@@ -143,7 +149,7 @@ exports.logoDetection = functions.region(region).runWith(runtimeOpts).storage.ob
 
   let itemArray = []
   logos.forEach(logo => {
-    if (logo.score >= 0.7) {
+    if (logo.score >= 0.5) {
       itemArray.push({
         type: 'action',
         action: {
