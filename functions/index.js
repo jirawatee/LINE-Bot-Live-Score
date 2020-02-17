@@ -10,13 +10,22 @@ const request = require("request-promise");
 const vision = require('@google-cloud/vision');
 const client = new vision.ImageAnnotatorClient();
 
+const LINE_CHANNEL_SECRET = "YOUR-CHANNEL-SECRET";
 const LINE_MESSAGING_API = "https://api.line.me/v2/bot/message";
 const LINE_HEADER = {
   "Content-Type": "application/json",
   Authorization: "Bearer YOUR-CHANNEL-ACCESS-TOKEN"
 };
 
+const crypto = require('crypto');
+
 exports.UCL = functions.region(region).runWith(runtimeOpts).https.onRequest(async (req, res) => {
+  const text = JSON.stringify(req.body);
+  const signature = crypto.createHmac('SHA256', LINE_CHANNEL_SECRET).update(text).digest('base64').toString();
+  if (signature !== req.headers['x-line-signature']) {
+    return res.status(401).send('Unauthorized');
+  }
+
   let event = req.body.events[0]
   switch (event.type) {
     case 'message':
@@ -79,7 +88,7 @@ exports.UCL = functions.region(region).runWith(runtimeOpts).https.onRequest(asyn
       break;
     case 'postback': {
       let msg = 'ทีมที่คุณเลือกมันเข้ารอบมาชิง UCL ซะทีไหนเล่า ปั๊ดโถ่!';
-      let team = event.postback.data.split('=')[1]
+      let team = event.postback.data.split('=')[1].toLowerCase()
       if (team.indexOf('liverpool') >= 0 || team.indexOf('tottenham') >= 0) {
         // Firebase Realtime Database
         await admin.database().ref('ucl/uid').child(event.source.userId).set(true)
@@ -100,6 +109,7 @@ const doImage = async (event) => {
   const path = require("path");
   const os = require("os");
   const fs = require("fs");
+  const UUID = require("uuid-v4");
 
   let url = `${LINE_MESSAGING_API}/${event.message.id}/content`;
   if (event.message.contentProvider.type === 'external') {
@@ -118,7 +128,12 @@ const doImage = async (event) => {
   const bucket = admin.storage().bucket('fir-devday.appspot.com');
   await bucket.upload(tempLocalFile, {
     destination: `${event.source.userId}.jpg`,
-    metadata: { cacheControl: 'no-cache' }
+    metadata: {
+      cacheControl: 'no-cache',
+      metadata: {
+        firebaseStorageDownloadTokens: UUID()
+      }
+    }
   });
 
   fs.unlinkSync(tempLocalFile)
@@ -134,7 +149,7 @@ exports.logoDetection = functions.region(region).runWith(runtimeOpts).storage.ob
 
   let itemArray = []
   logos.forEach(logo => {
-    if (logo.score >= 0.7) {
+    if (logo.score >= 0.5) {
       itemArray.push({
         type: 'action',
         action: {
@@ -181,17 +196,19 @@ exports.liveScore = functions.region(region).runWith(runtimeOpts).firestore.docu
 });
 */
 
-exports.finalScore = functions.region(region).pubsub.schedule('28 of may 03:10').timeZone('Asia/Bangkok').onRun(async context => {
-  // Firebase Realtime Database
-  let result = await admin.database().ref('ucl/score').once('value');
-  broadcast(`จบการแข่งขัน\n${result.val()}`);
+exports.finalScore = functions.region(region).runWith(runtimeOpts)
+  .pubsub.schedule('28 of may 03:10')
+  .timeZone('Asia/Bangkok').onRun(async context => {
+    // Firebase Realtime Database
+    let result = await admin.database().ref('ucl/score').once('value');
+    broadcast(`จบการแข่งขัน\n${result.val()}`);
 
-  /*
-  // Cloud Firestore
-  let result = await admin.firestore().doc('ucl/final').get()
-  broadcast(`จบการแข่งขัน\n${result.data().score}`);
-  */
-});
+    /*
+    // Cloud Firestore
+    let result = await admin.firestore().doc('ucl/final').get()
+    broadcast(`จบการแข่งขัน\n${result.data().score}`);
+    */
+  });
 
 const push = (userId, msg, quickItems) => {
   return request.post({
