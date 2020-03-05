@@ -12,6 +12,7 @@ const client = new vision.ImageAnnotatorClient();
 
 const LINE_CHANNEL_SECRET = "YOUR-CHANNEL-SECRET";
 const LINE_MESSAGING_API = "https://api.line.me/v2/bot/message";
+const LINE_CONTENT_API = "https://api-data.line.me/v2/bot/message";
 const LINE_HEADER = {
   "Content-Type": "application/json",
   Authorization: "Bearer YOUR-CHANNEL-ACCESS-TOKEN"
@@ -111,7 +112,7 @@ const doImage = async (event) => {
   const fs = require("fs");
   const UUID = require("uuid-v4");
 
-  let url = `${LINE_MESSAGING_API}/${event.message.id}/content`;
+  let url = `${LINE_CONTENT_API}/${event.message.id}/content`;
   if (event.message.contentProvider.type === 'external') {
     url = event.message.contentProvider.originalContentUrl;
   }
@@ -150,6 +151,7 @@ exports.logoDetection = functions.region(region).runWith(runtimeOpts).storage.ob
   let itemArray = []
   logos.forEach(logo => {
     if (logo.score >= 0.5) {
+      console.info(logo.description)
       itemArray.push({
         type: 'action',
         action: {
@@ -196,6 +198,7 @@ exports.liveScore = functions.region(region).runWith(runtimeOpts).firestore.docu
 });
 */
 
+/*
 exports.finalScore = functions.region(region).runWith(runtimeOpts)
   .pubsub.schedule('28 of may 03:10')
   .timeZone('Asia/Bangkok').onRun(async context => {
@@ -203,12 +206,11 @@ exports.finalScore = functions.region(region).runWith(runtimeOpts)
     let result = await admin.database().ref('ucl/score').once('value');
     broadcast(`จบการแข่งขัน\n${result.val()}`);
 
-    /*
     // Cloud Firestore
-    let result = await admin.firestore().doc('ucl/final').get()
-    broadcast(`จบการแข่งขัน\n${result.data().score}`);
-    */
+    // let result = await admin.firestore().doc('ucl/final').get()
+    // broadcast(`จบการแข่งขัน\n${result.data().score}`);
   });
+*/
 
 const push = (userId, msg, quickItems) => {
   return request.post({

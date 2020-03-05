@@ -11,6 +11,7 @@ const vision = require('@google-cloud/vision');
 const client = new vision.ImageAnnotatorClient();
 
 const LINE_MESSAGING_API = "https://api.line.me/v2/bot/message";
+const LINE_CONTENT_API = "https://api-data.line.me/v2/bot/message";
 const LINE_HEADER = {
   "Content-Type": "application/json",
   Authorization: "Bearer YOUR-CHANNEL-ACCESS-TOKEN"
