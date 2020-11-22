@@ -1,7 +1,7 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 admin.initializeApp();
-const region = 'asia-east2';
+const region = 'asia-southeast2';
 const runtimeOpts = {
   timeoutSeconds: 4,
   memory: "2GB"
@@ -10,12 +10,12 @@ const request = require("request-promise");
 const vision = require('@google-cloud/vision');
 const client = new vision.ImageAnnotatorClient();
 
-const LINE_CHANNEL_SECRET = "YOUR-CHANNEL-SECRET";
+const LINE_CHANNEL_SECRET = "e94bc178c187380068d943d404377989";
 const LINE_MESSAGING_API = "https://api.line.me/v2/bot/message";
 const LINE_CONTENT_API = "https://api-data.line.me/v2/bot/message";
 const LINE_HEADER = {
   "Content-Type": "application/json",
-  Authorization: "Bearer YOUR-CHANNEL-ACCESS-TOKEN"
+  Authorization: "Bearer tOCWwnukmrkeX7sUTI2BdmHg0MSjo9jI7IaWWM0r0OJnzZjR9oTMcmCB/g0Gp8inbA1tbKTvWdiDrG9ybC3VHp/IGte46sAXHkEg1AfooAQK2F0Qul5q30oM9QmraK7ullXq3DMEF/ePQwHOiatMKAdB04t89/1O/w1cDnyilFU="
 };
 
 const crypto = require('crypto');
@@ -126,7 +126,7 @@ const doImage = async (event) => {
   const tempLocalFile = path.join(os.tmpdir(), 'temp.jpg');
   await fs.writeFileSync(tempLocalFile, buffer);
 
-  const bucket = admin.storage().bucket('fir-devday.appspot.com');
+  const bucket = admin.storage().bucket();
   await bucket.upload(tempLocalFile, {
     destination: `${event.source.userId}.jpg`,
     metadata: {
@@ -142,6 +142,12 @@ const doImage = async (event) => {
 }
 
 exports.logoDetection = functions.region(region).runWith(runtimeOpts).storage.object().onFinalize(async (object) => {
+  /*
+  const contentType = object.contentType;
+  if (!contentType.startsWith("image/")) {
+    return console.log("This is not an image.");
+  }
+  */
   const fileName = object.name
   const userId = fileName.split('.')[0]
 
@@ -151,12 +157,18 @@ exports.logoDetection = functions.region(region).runWith(runtimeOpts).storage.ob
   let itemArray = []
   logos.forEach(logo => {
     if (logo.score >= 0.5) {
-      console.info(logo.description)
+      
+      // label 20 limits
+      let twenty = '';
+      if (logo.description.length > 20) {
+        twenty = logo.description.substr(0, 20)
+      }
+
       itemArray.push({
         type: 'action',
         action: {
           type: 'postback',
-          label: logo.description,
+          label: twenty,
           data: `team=${logo.description}`,
           displayText: logo.description
         }

@@ -1,7 +1,7 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 admin.initializeApp();
-const region = 'asia-east2';
+const region = 'asia-southeast2';
 const runtimeOpts = {
   timeoutSeconds: 4,
   memory: "2GB"
