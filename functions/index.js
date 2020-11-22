@@ -15,7 +15,7 @@ const LINE_MESSAGING_API = "https://api.line.me/v2/bot/message";
 const LINE_CONTENT_API = "https://api-data.line.me/v2/bot/message";
 const LINE_HEADER = {
   "Content-Type": "application/json",
-  Authorization: "Bearer tOCWwnukmrkeX7sUTI2BdmHg0MSjo9jI7IaWWM0r0OJnzZjR9oTMcmCB/g0Gp8inbA1tbKTvWdiDrG9ybC3VHp/IGte46sAXHkEg1AfooAQK2F0Qul5q30oM9QmraK7ullXq3DMEF/ePQwHOiatMKAdB04t89/1O/w1cDnyilFU="
+  Authorization: `Bearer ${functions.config().linedev.channel_access_token}`
 };
 
 const crypto = require('crypto');
