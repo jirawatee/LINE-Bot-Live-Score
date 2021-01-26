@@ -1,20 +1,21 @@
-**/package-lock.json
-
-# dependencies
 .idea
 **/node_modules/*
-
+**/.firebase
 **/.firebaserc
-
-# misc
+**/.runtimeconfig.json
 */npm-debug.log
 lerna-debug.log
-*.log
+*~
+service-account.json
+service-account-credentials.json
+**/package-lock.json
+**/ui-debug.log
+**/database-debug.log
+**/firebase-debug.log
+**/pubsub-debug.log
+**/tsconfig-compile.json
+yarn.lock
 
-# System Files
+*.log
 .DS_Store
 Thumbs.db
-
-service-account-credentials.json
-service-account.json
-**/package-lock.json
