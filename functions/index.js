@@ -3,8 +3,8 @@ const admin = require('firebase-admin');
 admin.initializeApp();
 const region = 'asia-southeast2';
 const runtimeOpts = {
-  timeoutSeconds: 4,
-  memory: "2GB"
+  timeoutSeconds: 8,
+  memory: "4GB"
 };
 const request = require("request-promise");
 const vision = require('@google-cloud/vision');

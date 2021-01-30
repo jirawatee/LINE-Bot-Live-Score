@@ -5,6 +5,12 @@
     ],
     "source": "functions"
   },
+  "database": {
+    "rules": "database.rules"
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  },
   "emulators": {
     "functions": {
       "port": 5001
