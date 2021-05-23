@@ -1,24 +1,19 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 admin.initializeApp();
-const region = 'asia-southeast2';
-const runtimeOpts = {
-  timeoutSeconds: 8,
-  memory: "4GB"
-};
+const crypto = require('crypto');
 const request = require("request-promise");
 const vision = require('@google-cloud/vision');
 const client = new vision.ImageAnnotatorClient();
-
-const LINE_CHANNEL_SECRET = "e94bc178c187380068d943d404377989";
+const region = 'asia-northeast1';
+const runtimeOpts = { timeoutSeconds: 8, memory: "1GB", maxInstances: 1};
+const LINE_CHANNEL_SECRET = functions.config().lineoa.developer.channel_secret;
 const LINE_MESSAGING_API = "https://api.line.me/v2/bot/message";
 const LINE_CONTENT_API = "https://api-data.line.me/v2/bot/message";
 const LINE_HEADER = {
   "Content-Type": "application/json",
-  Authorization: `Bearer ${functions.config().linedev.channel_access_token}`
+  Authorization: `Bearer ${functions.config().lineoa.developer.channel_access_token}`
 };
-
-const crypto = require('crypto');
 
 exports.UCL = functions.region(region).runWith(runtimeOpts).https.onRequest(async (req, res) => {
   const text = JSON.stringify(req.body);
@@ -27,13 +22,13 @@ exports.UCL = functions.region(region).runWith(runtimeOpts).https.onRequest(asyn
     return res.status(401).send('Unauthorized');
   }
 
-  let event = req.body.events[0]
+  let event = req.body.events[0];
   switch (event.type) {
     case 'message':
       if (event.message.type === 'image') {
-        doImage(event)
+        await doImage(event);
       } else if (event.message.type === 'text' && event.message.text === 'subscribe') {
-        reply(event.replyToken, {
+        await reply(event.replyToken, {
           "type": "flex",
           "altText": "Flex Message",
           "contents": {
@@ -41,7 +36,7 @@ exports.UCL = functions.region(region).runWith(runtimeOpts).https.onRequest(asyn
             "direction": "ltr",
             "hero": {
               "type": "image",
-              "url": "https://4.bp.blogspot.com/-j0d1WQiF-iU/XGxYdwp9C8I/AAAAAAAAUME/8IbomE8q9TUd3tUxWd5yV7-jz9YPVcxXACLcBGAs/s1600/Ucl19.jpg",
+              "url": "https://persources.com/wp-content/uploads/2019/03/UCL_FINAL_.jpg",
               "size": "full",
               "aspectRatio": "1.51:1",
               "aspectMode": "fit"
@@ -76,34 +71,34 @@ exports.UCL = functions.region(region).runWith(runtimeOpts).https.onRequest(asyn
           }
         });
       } else {
+        /* 
         // Firebase Realtime Database
-        let latest = await admin.database().ref('ucl/score').once('value')
-        reply(event.replyToken, { type: 'text', text: latest.val() })
-
-        /*
-        // Cloud Firestore
-        let latest = await admin.firestore().doc('ucl/final').get()
-        reply(event.replyToken, { type: 'text', text: latest.data().score })
+        let latest = await admin.database().ref('ucl/score').once('value');
+        await reply(event.replyToken, { type: 'text', text: latest.val() });
         */
+        
+        // Cloud Firestore
+        let latest = await admin.firestore().doc('ucl/final').get();
+        await reply(event.replyToken, { type: 'text', text: latest.data().score });
       }
       break;
     case 'postback': {
       let msg = 'ทีมที่คุณเลือกมันเข้ารอบมาชิง UCL ซะทีไหนเล่า ปั๊ดโถ่!';
-      let team = event.postback.data.split('=')[1].toLowerCase()
+      let team = event.postback.data.split('=')[1].toLowerCase();
       if (team.indexOf('liverpool') >= 0 || team.indexOf('tottenham') >= 0) {
         // Firebase Realtime Database
-        await admin.database().ref('ucl/uid').child(event.source.userId).set(true)
+        // await admin.database().ref('ucl/uid').child(event.source.userId).set(true);
 
         // Cloud Firestore
-        // await admin.firestore().doc('ucl/final').collection('uid').doc(event.source.userId).set({})
+        await admin.firestore().doc('ucl/final').collection('uid').doc(event.source.userId).set({});
 
         msg = 'ยินดีด้วยคุณผ่านการยืนยันตัวตน ระบบจะรายงานผลบอลคู่ชิงคู่นี้ให้คุณทุกลมหายใจ';
       }
-      reply(event.replyToken, { type: 'text', text: msg });
+      await reply(event.replyToken, { type: 'text', text: msg });
       break;
     }
   }
-  return null;
+  return res.end();
 });
 
 const doImage = async (event) => {
@@ -137,9 +132,9 @@ const doImage = async (event) => {
     }
   });
 
-  fs.unlinkSync(tempLocalFile)
+  fs.unlinkSync(tempLocalFile);
   reply(event.replyToken, { type: 'text', text: 'ขอคิดแป๊บนะเตง...' });
-}
+};
 
 exports.logoDetection = functions.region(region).runWith(runtimeOpts).storage.object().onFinalize(async (object) => {
   /*
@@ -148,20 +143,20 @@ exports.logoDetection = functions.region(region).runWith(runtimeOpts).storage.ob
     return console.log("This is not an image.");
   }
   */
-  const fileName = object.name
-  const userId = fileName.split('.')[0]
+  const fileName = object.name;
+  const userId = fileName.split('.')[0];
 
   const [result] = await client.logoDetection(`gs://${object.bucket}/${fileName}`);
   const logos = result.logoAnnotations;
 
-  let itemArray = []
+  let itemArray = [];
   logos.forEach(logo => {
     if (logo.score >= 0.5) {
       
       // label 20 limits
       let twenty = '';
       if (logo.description.length > 20) {
-        twenty = logo.description.substr(0, 20)
+        twenty = logo.description.substr(0, 20);
       }
 
       itemArray.push({
@@ -174,7 +169,7 @@ exports.logoDetection = functions.region(region).runWith(runtimeOpts).storage.ob
         }
       });
     }
-  })
+  });
 
   let msg = '';
   let quickItems = null;
@@ -187,42 +182,43 @@ exports.logoDetection = functions.region(region).runWith(runtimeOpts).storage.ob
     quickItems = null;
   }
 
-  push(userId, msg, quickItems)
+  await push(userId, msg, quickItems);
+  return null;
 });
 
+/* 
 // Firebase Realtime Database
 exports.liveScore = functions.region(region).runWith(runtimeOpts).database.ref('ucl/score').onWrite(async (change, context) => {
   let latest = change.after.val();
-  let userIds = await admin.database().ref('ucl/uid').once('value')
+  let userIds = await admin.database().ref('ucl/uid').once('value');
   Object.keys(userIds.val()).forEach(userId => {
-    push(userId, latest, null)
+    push(userId, latest, null);
   })
 });
+ */
 
-/*
 // Cloud Firestore
 exports.liveScore = functions.region(region).runWith(runtimeOpts).firestore.document('ucl/final').onWrite(async (change, context) => {
   let latest = change.after.data().score;
   let userIds = await admin.firestore().doc('ucl/final').collection('uid').get()
   userIds.forEach(doc => {
-    push(doc.id, latest, null)
+    push(doc.id, latest, null);
   });
+  return null;
 });
-*/
 
-/*
 exports.finalScore = functions.region(region).runWith(runtimeOpts)
-  .pubsub.schedule('28 of may 03:10')
-  .timeZone('Asia/Bangkok').onRun(async context => {
+  .pubsub.schedule('28 of may 03:10').timeZone('Asia/Bangkok').onRun(async context => {
+    /* 
     // Firebase Realtime Database
     let result = await admin.database().ref('ucl/score').once('value');
     broadcast(`จบการแข่งขัน\n${result.val()}`);
+    */
 
     // Cloud Firestore
-    // let result = await admin.firestore().doc('ucl/final').get()
-    // broadcast(`จบการแข่งขัน\n${result.data().score}`);
+    let result = await admin.firestore().doc('ucl/final').get();
+    broadcast(`จบการแข่งขัน\n${result.data().score}`);
   });
-*/
 
 const push = (userId, msg, quickItems) => {
   return request.post({
@@ -232,8 +228,8 @@ const push = (userId, msg, quickItems) => {
       to: userId,
       messages: [{ type: "text", text: msg, quickReply: quickItems }]
     })
-  })
-}
+  });
+};
 
 const reply = (token, payload) => {
   return request.post({
@@ -243,8 +239,8 @@ const reply = (token, payload) => {
       replyToken: token,
       messages: [payload]
     })
-  })
-}
+  });
+};
 
 const broadcast = (msg) => {
   return request.post({
@@ -253,5 +249,5 @@ const broadcast = (msg) => {
     body: JSON.stringify({
       messages: [{ type: "text", text: msg }]
     })
-  })
+  });
 };
